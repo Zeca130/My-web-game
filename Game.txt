@@ -1,0 +1,1979 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>Симулятор Удачи — Релизный фестиваль</title>
+<style>
+:root{
+  --bg1:#071029; --bg2:#0b2638; --card:#0f2a3a; --accent:#ffd166;
+  --muted:#9fb3c8; --glass: rgba(255,255,255,0.03);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;background:linear-gradient(180deg,var(--bg1),var(--bg2));color:#e6f1fb}
+.container{max-width:100%;margin:0;padding:8px;display:grid;grid-template-columns:1fr;gap:8px}
+.header{display:flex;align-items:center;gap:8px}
+.logo svg{width:48px;height:48px}
+.title{font-size:18px;font-weight:700}
+.top-stats{margin-left:auto;display:flex;gap:6px;align-items:center}
+.stat{background:var(--glass);padding:6px 8px;border-radius:6px;min-width:70px;text-align:center}
+.stat .v{font-size:14px;font-weight:700;color:var(--accent)}
+.play-area{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.01));padding:8px;border-radius:10px;min-height:400px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden}
+.controls{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.btn-primary{
+  flex:1;
+  min-width:100px;
+  padding:8px 12px;
+  border-radius:8px;
+  border:0;
+  background:linear-gradient(90deg,#1fa2ff,#2ea3ff);
+  font-size:14px;
+  cursor:pointer;
+  box-shadow:0 4px 12px rgba(0,0,0,0.3);
+  white-space:normal;
+  text-align:center;
+}
+.btn-ghost{padding:6px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#e6f1fb;cursor:pointer}
+.feed{background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.01));padding:6px;border-radius:8px;display:flex;flex-direction:column;gap:4px;min-height:200px;overflow:auto;font-size:12px}
+.feed .item{display:flex;gap:6px;align-items:center;padding:6px;border-radius:6px;background:rgba(255,255,255,0.015)}
+/* НОВОЕ: меню апгрейдов НЕПРОЗРАЧНОЕ */
+.side-panel{
+  background:var(--card); /* Полностью непрозрачный фон */
+  padding:8px;
+  border-radius:10px;
+  min-height:400px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2); /* Добавлена тень для глубины */
+}
+.section{
+  background:rgba(255,255,255,0.05); /* Слегка прозрачные секции внутри */
+  padding:6px;
+  border-radius:8px;
+}
+.upgrades-grid{display:grid;grid-template-columns:1fr;gap:6px;max-height:300px;overflow:auto}
+.upgrade-card{
+  background:rgba(255,255,255,0.08); /* Слегка прозрачные карточки */
+  padding:6px;
+  border-radius:6px;
+  border:1px solid rgba(255,255,255,0.08);
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  font-size:12px;
+}
+.upgrade-top{display:flex;align-items:center;gap:6px}
+.upgrade-name{font-weight:700}
+.upgrade-meta{font-size:10px;color:var(--muted)}
+.upgrade-actions{display:flex;gap:4px;align-items:center}
+.action-btn{padding:4px 6px;border-radius:4px;border:0;cursor:pointer}
+.open-btn{background:linear-gradient(180deg,var(--accent),#ffb84d);color:#000;font-weight:700}
+.progress{height:6px;background:rgba(255,255,255,0.08);border-radius:99px;overflow:hidden}
+.progress > i{display:block;height:100%;background:linear-gradient(90deg,#ffd166,#ffb84d);width:0%}
+.inv-list{display:flex;flex-direction:column;gap:4px;max-height:120px;overflow:auto}
+.small{font-size:10px;color:var(--muted)}
+.footer{text-align:center;color:var(--muted);font-size:10px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:12px;background:#072b3a;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.03);display:none;z-index:9999}
+.coin-fx{position:absolute;border-radius:50%;width:16px;height:16px;background:linear-gradient(180deg,#ffd166,#ffa500);box-shadow:0 1px 4px rgba(0,0,0,0.4);pointer-events:none;transform:translate(-50%,-50%);transition:transform 650ms cubic-bezier(.2,.8,.2,1),opacity 650ms;}
+.quest-row{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 6px;border-radius:6px;background:rgba(255,255,255,0.02)}
+.event-btn{background:linear-gradient(180deg,#ff7a5a,#ffb84d);color:#000;font-weight:700;padding:8px;border-radius:6px;border:none;cursor:pointer}
+/* НОВОЕ: стили для эпичного ивент-магазина */
+.event-shop-grid{display:grid;grid-template-columns:1fr;gap:6px}
+.event-shop-item{
+  background:rgba(255,255,255,0.08);
+  padding:8px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.08);
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  font-size:12px;
+  position:relative;
+  overflow:hidden;
+}
+.event-shop-item::before{
+  content:'';
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:2px;
+  background:linear-gradient(90deg,#ff5a7a,#ff7ec7);
+}
+.event-shop-item .name{
+  font-weight:700;
+  color:#ff7ec7;
+  font-size:14px;
+}
+.event-shop-item .desc{
+  color:var(--muted);
+  font-size:10px;
+  line-height:1.3;
+}
+.event-shop-item .cost{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  font-weight:700;
+  color:#ffd166;
+}
+.event-shop-item .sold{
+  opacity:0.4;
+  filter:blur(1px);
+}
+.event-shop-item .epic-tag{
+  position:absolute;
+  top:6px;
+  right:6px;
+  background:linear-gradient(90deg,#ff5a7a,#ff7ec7);
+  color:#fff;
+  font-size:9px;
+  padding:1px 4px;
+  border-radius:99px;
+  font-weight:700;
+}
+/* НОВОЕ: стили для магазина питомцев */
+.pets-shop-grid{display:grid;grid-template-columns:1fr;gap:6px}
+.pet-shop-item{
+  background:rgba(255,255,255,0.08);
+  padding:8px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.08);
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  font-size:12px;
+  position:relative;
+  overflow:hidden;
+}
+.pet-shop-item::before{
+  content:'';
+  position:absolute;
+  top:0;
+  left:0;
+  right:0;
+  height:2px;
+}
+.pet-shop-item .pet-icon{
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin:0 auto;
+  font-size:16px;
+}
+.pet-shop-item .name{
+  font-weight:700;
+  text-align:center;
+}
+.pet-shop-item .rarity{
+  text-align:center;
+  font-size:10px;
+  color:var(--muted);
+}
+.pet-shop-item .cost{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  font-weight:700;
+  color:#ffd166;
+}
+.pet-shop-item .hatched{
+  opacity:0.4;
+}
+.common::before{background:#7fd3ff}
+.rare::before{background:#ffd166}
+.epic::before{background:#ff7ec7}
+.legendary::before{background:#ff5a7a}
+.common .pet-icon{background:#7fd3ff22}
+.rare .pet-icon{background:#ffd16622}
+.epic .pet-icon{background:#ff7ec722}
+.legendary .pet-icon{background:#ff5a7a22}
+/* НОВОЕ: стили для модального окна питомцев */
+.pet-modal{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(0,0,0,0.7);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:10000;
+  display:none;
+}
+.pet-modal-content{
+  background:var(--card);
+  width:90%;
+  max-width:320px;
+  border-radius:10px;
+  overflow:hidden;
+  box-shadow:0 8px 24px rgba(0,0,0,0.5);
+}
+.pet-modal-header{
+  padding:10px;
+  background:rgba(255,255,255,0.05);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.pet-modal-body{
+  padding:10px;
+  max-height:50vh;
+  overflow:auto;
+}
+.pet-modal-footer{
+  padding:10px;
+  display:flex;
+  gap:6px;
+  background:rgba(255,255,255,0.05);
+}
+.pet-slot{
+  width:48px;
+  height:48px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:16px;
+  border:1px dashed rgba(255,255,255,0.1);
+  margin:0 3px;
+}
+.pet-slot.selected{
+  border-color:var(--accent);
+  box-shadow:0 0 8px rgba(255,213,102,0.3);
+}
+.pet-slot .remove{
+  position:absolute;
+  top:-4px;
+  right:-4px;
+  width:16px;
+  height:16px;
+  border-radius:50%;
+  background:#ff5a7a;
+  color:#fff;
+  font-size:8px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+}
+/* НОВОЕ: стили для настроек */
+.settings-panel{display:flex;flex-direction:column;gap:4px}
+.lang-selector{display:flex;gap:4px}
+.lang-btn{padding:4px 6px;border-radius:4px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#e6f1fb;cursor:pointer;flex:1}
+.lang-btn.active{background:rgba(255,255,255,0.05);border-color:var(--accent)}
+
+/* НОВОЕ: стили для достижений */
+.achievements-section{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.achievement-item{
+  padding:4px;
+  border-radius:4px;
+  background:rgba(255,255,255,0.03);
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.achievement-icon{
+  width:24px;
+  height:24px;
+  border-radius:50%;
+  background:linear-gradient(135deg,#ffd166,#ffb84d);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:12px;
+}
+.achievement-info{
+  flex:1;
+  font-size:10px;
+}
+.achievement-info .name{
+  font-weight:700;
+  color:#ffd166;
+}
+.achievement-info .desc{
+  color:var(--muted);
+}
+.achievement-reward{
+  background:rgba(255,213,102,0.1);
+  padding:2px 4px;
+  border-radius:4px;
+  font-size:10px;
+  color:#ffd166;
+  font-weight:700;
+}
+.achievement-completed{
+  opacity:0.6;
+}
+.achievement-completed .achievement-icon{
+  background:linear-gradient(135deg,#7fd3ff,#5ea6ff);
+}
+.achievement-notification{
+  position:fixed;
+  top:60px;
+  left:50%;
+  transform:translateX(-50%);
+  background:rgba(255, 213, 102, 0.2);
+  padding:8px 12px;
+  border-radius:99px;
+  border:1px solid rgba(255,213,102,0.3);
+  z-index:9999;
+  max-width:80%;
+  text-align:center;
+  transition:opacity 1s;
+}
+
+/* НОВОЕ: стили для яиц с шансами */
+.egg-chances {
+  background: rgba(255,213,102,0.1);
+  border-radius: 4px;
+  padding: 4px;
+  font-size: 9px;
+  color: #ffd166;
+  margin-top: 2px;
+}
+.egg-chance {
+  display: flex;
+  justify-content: space-between;
+}
+.common-chance { color: #7fd3ff; }
+.rare-chance { color: #ffd166; }
+.epic-chance { color: #ff7ec7; }
+.legendary-chance { color: #ff5a7a; }
+
+/* MOBILE ADAPTATION */
+@media (max-width:500px){
+  .container{padding:6px}
+  .header{gap:4px}
+  .title{font-size:16px}
+  .top-stats{gap:4px}
+  .stat{padding:4px 6px;min-width:60px}
+  .stat .v{font-size:12px}
+  .play-area{min-height:300px}
+  .controls{gap:4px}
+  .btn-primary{padding:6px 8px;font-size:12px}
+  .btn-ghost{padding:4px 6px}
+  .feed{min-height:150px;max-height:200px}
+  .upgrades-grid{gap:4px}
+  .upgrade-card{padding:4px}
+  .upgrade-name{font-size:12px}
+  .upgrade-meta{font-size:9px}
+  .progress{height:4px}
+  .inv-list{max-height:100px}
+  .small{font-size:9px}
+  .footer{font-size:9px}
+  .quest-row{padding:3px 4px}
+  .event-btn{padding:6px}
+  .event-shop-item, .pet-shop-item{padding:6px}
+  .event-shop-item .name{font-size:12px}
+  .event-shop-item .cost{gap:2px}
+  .pet-shop-item .pet-icon{width:28px;height:28px}
+  .pet-modal-content{max-width:280px}
+  .pet-slot{width:40px;height:40px}
+}
+
+/* Small visual polish */
+body.mobile-open{ overflow:hidden; } 
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo">
+      <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="56" height="56" rx="12" fill="#062432"/><circle cx="32" cy="24" r="8" fill="#ffd166"/><path d="M22 36c6 6 14 6 20 0" stroke="#9fd3ff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+    </div>
+    <div>
+      <div class="title">Симулятор Удачи — Релизный фестиваль</div>
+      <div class="small">Авто-ивенты, квесты, 100 апгрейдов и локальное сохранение</div>
+    </div>
+    <div class="top-stats">
+      <div class="stat"><div class="small">Монеты</div><div class="v" id="coins">0</div></div>
+      <div class="stat"><div class="small">Уровень</div><div class="v" id="lvl">1</div></div>
+      <div class="stat"><div class="small">Пассив</div><div class="v" id="pps">0/s</div></div>
+    </div>
+  </div>
+
+  <div class="play-area">
+    <div class="controls">
+      <button id="tryBtn" class="btn-primary">Испытать удачу</button>
+      <button id="spinWheel" class="btn-ghost">Колесо фортуны</button>
+      <button id="toggleAuto" class="btn-ghost">Авто: выкл</button>
+      <button id="mobileMenuBtn" class="btn-ghost" aria-label="Меню">Меню</button>
+
+      <div style="min-width:120px;text-align:right">
+        <div class="small">Опыт до уровня</div>
+        <div class="progress" style="margin-top:4px"><i id="xpbar" style="width:0%"></i></div>
+      </div>
+    </div>
+
+    <div class="feed" id="feed"></div>
+
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div style="flex:1">
+        <div class="section">
+          <strong>Квест</strong>
+          <div id="questArea" class="small" style="margin-top:6px"></div>
+        </div>
+      </div>
+      <div style="width:220px">
+        <div class="section" style="display:flex;flex-direction:column;gap:4px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><strong>События</strong><div class="small">Релизный фестиваль и Новая игра!</div></div>
+            <div>
+              <div style="display:flex;gap:4px;flex-direction:column">
+                <div style="display:flex;gap:4px">
+                  <button id="eventBtn" class="event-btn">Релизный фестиваль</button>
+                  <button id="newEventBtn" class="event-btn" style="background:linear-gradient(180deg,#ff5a7a,#ff7ec7)">Новая игра!</button>
+                </div>
+                <button id="petsBtn" class="event-btn" style="background:linear-gradient(180deg,#7fd3ff,#5ea6ff)">Питомцы</button>
+              </div>
+            </div>
+          </div>
+          <div id="eventStatus" class="small" style="margin-top:4px">Cобытие не активно</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section" style="margin-top:6px">
+      <div style="display:flex;align-items:center;gap:6px">
+        <div>Питомцы:</div>
+        <div class="pet-slot" id="petSlot1"></div>
+        <div class="pet-slot" id="petSlot2"></div>
+        <div style="margin-left:auto">
+          <div class="small">Множитель: <span id="petMult">x1</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:4px;align-items:center;justify-content:space-between">
+      <div class="small">Управление: Space — испытать удачу · S — открыть первый доступный апгрейд</div>
+      <div style="display:flex;gap:4px">
+        <button id="exportState" class="btn-ghost">Экспорт</button>
+        <button id="importState" class="btn-ghost">Импорт</button>
+        <button id="resetAll" class="btn-ghost">Сброс</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="side-panel" id="sidePanel">
+    <div class="section">
+      <strong>Улучшения (100)</strong>
+      <div class="upgrades-grid" id="upgradesGrid"></div>
+    </div>
+
+    <div class="section" id="eventShopSection" style="display:none">
+      <strong>Эпический магазин ивента</strong>
+      <div class="small" style="margin-top:2px;color:#ff7ec7">Только во время события! 1 покупка на предмет</div>
+      <div class="event-shop-grid" id="eventShopGrid"></div>
+    </div>
+    
+    <div class="section" id="petsShopSection">
+      <strong>Магазин питомцев</strong>
+      <div class="small" style="margin-top:2px">Купи яйцо или питомца</div>
+      <div class="pets-shop-grid" id="petsShopGrid"></div>
+    </div>
+    
+    <!-- НОВОЕ: секция достижений -->
+    <div class="section" id="achievementsSection">
+      <strong>Достижения <span id="achievementsCounter">(0/0)</span></strong>
+      <div class="small" style="margin-top:2px;color:#ffd166">Получай награды за выполнение заданий</div>
+      <div class="achievements-section" id="achievementsList"></div>
+    </div>
+
+    <div class="section">
+      <strong>Инвентарь</strong>
+      <div class="inv-list" id="inventory"></div>
+    </div>
+
+    <div class="section">
+      <strong>Статусы</strong>
+      <div class="small">Редкий шанс: <span id="rarePct">2%</span></div>
+      <div class="small">Множитель: <span id="mult">x1</span></div>
+      <div class="small">Пассив: <span id="ppsSide">0/s</span></div>
+    </div>
+    
+    <div class="section">
+      <strong>Настройки</strong>
+      <div class="settings-panel">
+        <div>Язык интерфейса</div>
+        <div class="lang-selector">
+          <button class="lang-btn active" data-lang="ru">Русский</button>
+          <button class="lang-btn" data-lang="en">English</button>
+          <button class="lang-btn" data-lang="cs">Čeština</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Сохранение: localStorage. Открывай в Acode/браузере.</div>
+</div>
+
+<!-- Модальные окна -->
+<div class="pet-modal" id="petModal">
+  <div class="pet-modal-content">
+    <div class="pet-modal-header">
+      <div><strong>Выбор питомцев</strong> <span class="small">(выберите до 2)</span></div>
+      <div id="closePetModal" style="cursor:pointer">&times;</div>
+    </div>
+    <div class="pet-modal-body">
+      <div id="petInventoryGrid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px"></div>
+    </div>
+    <div class="pet-modal-footer">
+      <button id="savePetsBtn" class="btn-primary">Сохранить выбор</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* Полный скрипт — включает:
+   1. Исправление текста на кнопке яйца (теперь "Купить яйцо")
+   2. Проверку монет при покупке яйца
+   3. Восстановление кнопки "Новая игра" 
+   4. Магазин питомцев и яиц с НОВЫМИ ШАНСАМИ ВЫЛУПЛЕНИЯ
+   5. Систему выбора двух активных питомцев через модальное окно
+   6. Задержку 350 секунд между активациями событий
+   7. Усиленные апгрейды (+50% к эффектам)
+   8. Настройки языка (русский, английский, чешский)
+   9. Мобильное меню (выдвижная панель)
+   10. НЕПРОЗРАЧНОЕ меню апгрейдов
+   11. СИСТЕМА ДОСТИЖЕНИЙ */ 
+
+// ---------- Настройки и константы ----------
+const STORAGE_KEY = 'luck_sim_release_v1';
+const BASE_COOLDOWN_MS = 5000;
+const MIN_COOLDOWN_MS = 800;
+
+// RANDOM event chance bounds (0.6% - 0.9% -> 0.006 - 0.009)
+const RANDOM_EVENT_MIN = 0.006;
+const RANDOM_EVENT_MAX = 0.009;
+const EVENT_NAME = "Релизный фестиваль удачи";
+// НОВОЕ: увеличена задержка до 350 секунд (350_000 мс)
+const EVENT_DURATION_MS = 20_000; // 20s
+const EVENT_COOLDOWN_MS = 350_000; // 350s (было 60_000)
+
+// НОВОЕ СОБЫТИЕ: константы для ивента "В честь новой игры"
+const NEW_EVENT_NAME = "✨ В честь новой игры!";
+const NEW_EVENT_DURATION_MS = 15_000; // 15s
+// НОВОЕ: увеличена задержка до 350 секунд
+const NEW_EVENT_COOLDOWN_MS = 350_000; // 350s (было 45_000)
+
+// НОВОЕ: эпичные предметы для ивент-магазина
+const EVENT_SHOP_ITEMS = [
+  {
+    id: 'mythical_amulet',
+    name: 'Мифический амулет удачи',
+    desc: '+10% к шансу редких выпадений (постоянно)',
+    cost: 6500,
+    effect: { type: 'rare', val: 10 },
+    available: true
+  },
+  {
+    id: 'eternal_engine',
+    name: 'Вечный двигатель кликов',
+    desc: 'x2 к пассивному доходу (постоянно)',
+    cost: 5000,
+    effect: { type: 'pps', val: 100 },
+    available: true
+  },
+  {
+    id: 'god_hand',
+    name: 'Божественная рука',
+    desc: 'Множитель x2 ко всем выпадениям (постоянно)',
+    cost: 7500,
+    effect: { type: 'mult', val: 1 },
+    available: true
+  }
+];
+
+// НОВОЕ: питомцы с редкостью и множителем
+const PETS = [
+  {
+    id: 'pet1',
+    name: 'Дружелюбный кролик',
+    rarity: 'common',
+    multiplier: 1.05,
+    cost: 1500,
+    icon: '🐇',
+    desc: 'Обычный питомец'
+  },
+  {
+    id: 'pet2',
+    name: 'Хитрый лис',
+    rarity: 'rare',
+    multiplier: 1.15,
+    cost: 4000,
+    icon: '🦊',
+    desc: 'Редкий питомец'
+  },
+  {
+    id: 'pet3',
+    name: 'Грозный дракон',
+    rarity: 'epic',
+    multiplier: 1.3,
+    cost: 8500,
+    icon: '🐉',
+    desc: 'Эпический питомец'
+  },
+  {
+    id: 'pet4',
+    name: 'Величественный феникс',
+    rarity: 'legendary',
+    multiplier: 1.5,
+    cost: 15000,
+    icon: '🦅',
+    desc: 'Легендарный питомец'
+  }
+];
+
+// НОВОЕ: шансы вылупления из яйца
+const EGG_HATCH_CHANCES = {
+  common: 40,   // 40% шанс на обычного питомца
+  rare: 30,     // 30% шанс на редкого питомца
+  epic: 15,     // 15% шанс на эпического питомца
+  legendary: 5  // 5% шанс на легендарного питомца
+  // Оставшиеся 10% - яйцо не вылупится
+};
+
+// НОВОЕ: переводы для разных языков
+const translations = {
+  ru: {
+    title: "Симулятор Удачи — Релизный фестиваль",
+    subtitle: "Авто-ивенты, квесты, 100 апгрейдов и локальное сохранение",
+    coins: "Монеты",
+    level: "Уровень",
+    passive: "Пассив",
+    tryBtn: "Испытать удачу",
+    spinWheel: "Колесо фортуны",
+    auto: "Авто",
+    xpToLevel: "Опыт до уровня",
+    quest: "Квест",
+    events: "События",
+    eventDesc: "Релизный фестиваль и Новая игра!",
+    eventBtn1: "Релизный фестиваль",
+    eventBtn2: "Новая игра!",
+    petsBtn: "Питомцы",
+    noEventActive: "Cобытие не активно",
+    eventShopTitle: "Эпический магазин ивента",
+    eventShopDesc: "Только во время события! 1 покупка на предмет",
+    petsShopTitle: "Магазин питомцев",
+    petsShopDesc: "Купи питомца или яйцо",
+    noPet: "Нет питомца",
+    petMult: "Питомцы",
+    controls: "Управление: Space — испытать удачу · S — открыть первый доступный апгрейд",
+    settings: "Настройки",
+    langLabel: "Язык интерфейса",
+    exportBtn: "Экспорт",
+    importBtn: "Импорт",
+    resetBtn: "Сброс",
+    footer: "Сохранение: localStorage. Открывай в Acode/браузере.",
+    rareChance: "Редкий шанс",
+    multiplier: "Множитель",
+    inventory: "Инвентарь",
+    upgrades: "Улучшения (100)",
+    stats: "Статусы",
+    petBought: "Питомец куплен!",
+    petActivated: "Питомцы активированы!",
+    petHatched: "Из яйца вылупился",
+    petEgg: "Яйцо питомца",
+    petSelect: "Выбор питомцев",
+    petSelectDesc: "(выберите до 2)",
+    petSave: "Сохранить выбор",
+    petMax: "Можно выбрать только двух питомцев!",
+    petSlot: "Слот для питомца",
+    eggChancesTitle: "Шансы вылупления:",
+    eggCommon: "Обычный: 40%",
+    eggRare: "Редкий: 30%",
+    eggEpic: "Эпический: 15%",
+    eggLegendary: "Легендарный: 5%",
+    eggNoHatch: "Не вылупится: 10%",
+    eggBought: "Куплено яйцо!",
+    eggHatched: "Из яйца вылупился",
+    eggNoHatchMsg: "Яйцо не вылупилось... Попробуй ещё раз!",
+    eggDuplicate: "У вас уже есть этот питомец!",
+    eggRefund: "Вам возвращено {coins} монет",
+    // НОВОЕ: переводы для достижений
+    achievements: "Достижения",
+    achievementCompleted: "Выполнено!",
+    achievementReward: "Награда: {reward} мон.",
+    achievementFirstClick: "Первый клик",
+    achievementFirstClickDesc: "Сделай первый клик",
+    achievementLvl5: "Пятый уровень",
+    achievementLvl5Desc: "Достигни 5 уровня",
+    achievement1000Coins: "Тысячник",
+    achievement1000CoinsDesc: "Набери 1000 монет",
+    achievement50Upgrades: "Улучшатель",
+    achievement50UpgradesDesc: "Купи 50 улучшений",
+    achievementPetCollector: "Коллекционер",
+    achievementPetCollectorDesc: "Собери всех питомцев",
+    // НОВОЕ: переводы для улучшений
+    upgradeBuy: "Купить",
+    upgradeInProgress: "Покупается...",
+    upgradePurchased: "Куплено",
+    // НОВОЕ: исправленные тексты для яйца
+    petEgg: "Купить яйцо",  // Теперь правильно
+    eggPurchaseFailed: "Нужно {coins} монет", // Новый текст для ошибки
+  },
+  en: {
+    title: "Luck Simulator — Release Festival",
+    subtitle: "Auto-events, quests, 100 upgrades and local save",
+    coins: "Coins",
+    level: "Level",
+    passive: "Passive",
+    tryBtn: "Try your luck",
+    spinWheel: "Spin wheel",
+    auto: "Auto",
+    xpToLevel: "XP to level",
+    quest: "Quest",
+    events: "Events",
+    eventDesc: "Release Festival and New Game!",
+    eventBtn1: "Release Festival",
+    eventBtn2: "New Game!",
+    petsBtn: "Pets",
+    noEventActive: "No event active",
+    eventShopTitle: "Epic Event Shop",
+    eventShopDesc: "Only during event! 1 purchase per item",
+    petsShopTitle: "Pet Shop",
+    petsShopDesc: "Buy a pet or an egg",
+    noPet: "No pet",
+    petMult: "Pets",
+    controls: "Controls: Space — try luck · S — open first available upgrade",
+    settings: "Settings",
+    langLabel: "Interface language",
+    exportBtn: "Export",
+    importBtn: "Import",
+    resetBtn: "Reset",
+    footer: "Save: localStorage. Open in Acode/browser.",
+    rareChance: "Rare chance",
+    multiplier: "Multiplier",
+    inventory: "Inventory",
+    upgrades: "Upgrades (100)",
+    stats: "Status",
+    petBought: "Pet bought!",
+    petActivated: "Pets activated!",
+    petHatched: "Hatched from egg",
+    petEgg: "Pet egg",
+    petSelect: "Pet Selection",
+    petSelectDesc: "(select up to 2)",
+    petSave: "Save selection",
+    petMax: "You can select only two pets!",
+    petSlot: "Pet slot",
+    eggChancesTitle: "Hatching chances:",
+    eggCommon: "Common: 40%",
+    eggRare: "Rare: 30%",
+    eggEpic: "Epic: 15%",
+    eggLegendary: "Legendary: 5%",
+    eggNoHatch: "No hatch: 10%",
+    eggBought: "Egg bought!",
+    eggHatched: "Hatched from egg",
+    eggNoHatchMsg: "Egg didn't hatch... Try again!",
+    eggDuplicate: "You already have this pet!",
+    eggRefund: "Refunded {coins} coins",
+    // НОВОЕ: переводы для достижений
+    achievements: "Achievements",
+    achievementCompleted: "Completed!",
+    achievementReward: "Reward: {reward} coins",
+    achievementFirstClick: "First click",
+    achievementFirstClickDesc: "Make your first click",
+    achievementLvl5: "Level 5",
+    achievementLvl5Desc: "Reach level 5",
+    achievement1000Coins: "Thousand",
+    achievement1000CoinsDesc: "Collect 1000 coins",
+    achievement50Upgrades: "Upgrader",
+    achievement50UpgradesDesc: "Buy 50 upgrades",
+    achievementPetCollector: "Pet Collector",
+    achievementPetCollectorDesc: "Collect all pets",
+    // НОВОЕ: переводы для улучшений
+    upgradeBuy: "Buy",
+    upgradeInProgress: "Buying...",
+    upgradePurchased: "Purchased",
+    // НОВОЕ: исправленные тексты для яйца
+    petEgg: "Buy egg",
+    eggPurchaseFailed: "Need {coins} coins",
+  },
+  cs: {
+    title: "Simulátor štěstí — Vydání festivalu",
+    subtitle: "Auto-události, úkoly, 100 vylepšení a lokální uložení",
+    coins: "Mince",
+    level: "Úroveň",
+    passive: "Pasivní",
+    tryBtn: "Vyzkoušet štěstí",
+    spinWheel: "Kolo štěstí",
+    auto: "Auto",
+    xpToLevel: "Zkušenosti do úrovně",
+    quest: "Úkol",
+    events: "Události",
+    eventDesc: "Vydání festivalu a Nová hra!",
+    eventBtn1: "Vydání festivalu",
+    eventBtn2: "Nová hra!",
+    petsBtn: "Mazlíčci",
+    noEventActive: "Žádná událost aktivní",
+    eventShopTitle: "Epický eventový obchod",
+    eventShopDesc: "Pouze během události! 1 nákup na předmět",
+    petsShopTitle: "Obchod s mazlíčky",
+    petsShopDesc: "Kupte si mazlíčka nebo vejce",
+    noPet: "Žádný mazlíček",
+    petMult: "Mazlíčci",
+    controls: "Ovládání: Space — vyzkoušet štěstí · S — otevřít první dostupné vylepšení",
+    settings: "Nastavení",
+    langLabel: "Jazyk rozhraní",
+    exportBtn: "Export",
+    importBtn: "Import",
+    resetBtn: "Reset",
+    footer: "Uložení: localStorage. Otevři v Acode/prohlížeči.",
+    rareChance: "Šance na raritu",
+    multiplier: "Násobič",
+    inventory: "Inventář",
+    upgrades: "Vylepšení (100)",
+    stats: "Stav",
+    petBought: "Mazlíček koupen!",
+    petActivated: "Mazlíčci aktivováni!",
+    petHatched: "Z vejce se vylíhl",
+    petEgg: "Vejce mazlíčka",
+    petSelect: "Výběr mazlíčků",
+    petSelectDesc: "(vyberte až 2)",
+    petSave: "Uložit výběr",
+    petMax: "Můžete vybrat pouze dva mazlíčky!",
+    petSlot: "Slot pro mazlíčka",
+    eggChancesTitle: "Šance na vylíhnutí:",
+    eggCommon: "Běžné: 40%",
+    eggRare: "Vzácné: 30%",
+    eggEpic: "Epické: 15%",
+    eggLegendary: "Legendární: 5%",
+    eggNoHatch: "Nevylíhne se: 10%",
+    eggBought: "Koupeno vejce!",
+    eggHatched: "Z vejce se vylíhl",
+    eggNoHatchMsg: "Vejce se nevylíhlo... Zkuste znovu!",
+    eggDuplicate: "Tento mazlíček již máte!",
+    eggRefund: "Vráceno {coins} mincí",
+    // НОВОЕ: переводы для достижений
+    achievements: "Úspěchy",
+    achievementCompleted: "Dokončeno!",
+    achievementReward: "Odmena: {reward} mincí",
+    achievementFirstClick: "První klik",
+    achievementFirstClickDesc: "Udělejte svůj první klik",
+    achievementLvl5: "Úroveň 5",
+    achievementLvl5Desc: "Dosáhněte 5. úrovně",
+    achievement1000Coins: "Tisícovka",
+    achievement1000CoinsDesc: "Nasbírejte 1000 mincí",
+    achievement50Upgrades: "Vylepšovatel",
+    achievement50UpgradesDesc: "Kupte 50 vylepšení",
+    achievementPetCollector: "Sběratel mazlíčků",
+    achievementPetCollectorDesc: "Seberte všechny mazlíčky",
+    // НОВОЕ: переводы для улучшений
+    upgradeBuy: "Koupit",
+    upgradeInProgress: "Nákup...",
+    upgradePurchased: "Koupeno",
+    // НОВОЕ: исправленные тексты для яйца
+    petEgg: "Koupit vejce",
+    eggPurchaseFailed: "Potřebujete {coins} mincí",
+  }
+};
+
+// НОВОЕ: определение достижений
+const ACHIEVEMENTS = [
+  { 
+    id: 'first_click', 
+    name: 'achievementFirstClick', 
+    desc: 'achievementFirstClickDesc', 
+    condition: () => state.stats.tries >= 1, 
+    reward: 50 
+  },
+  { 
+    id: 'lvl5', 
+    name: 'achievementLvl5', 
+    desc: 'achievementLvl5Desc', 
+    condition: () => state.lvl >= 5, 
+    reward: 200 
+  },
+  { 
+    id: '1000_coins', 
+    name: 'achievement1000Coins', 
+    desc: 'achievement1000CoinsDesc', 
+    condition: () => state.coins >= 1000, 
+    reward: 300 
+  },
+  { 
+    id: '50_upgrades', 
+    name: 'achievement50Upgrades', 
+    desc: 'achievement50UpgradesDesc', 
+    condition: () => Object.keys(state.upgradesUnlocked).length >= 50, 
+    reward: 500 
+  },
+  { 
+    id: 'pet_collector', 
+    name: 'achievementPetCollector', 
+    desc: 'achievementPetCollectorDesc', 
+    condition: () => {
+      const hatchedPets = Object.values(state.pets).filter(p => p.hatched).length;
+      return hatchedPets >= PETS.length;
+    }, 
+    reward: 1000 
+  }
+];
+
+const defaultState = {
+  coins:0, lvl:1, xp:0, xpToNext:120, pps:0, rarePct:2, mult:1,
+  inventory:{}, upgradesUnlocked:{}, upgradesInProgress:{}, stats:{tries:0,rare:0,epic:0,passive:0},
+  autoOpenerLevel:0, autoEnabled:false, tryCooldownUntil:0, cooldownReductionMs:0,
+  eventUntil:0, eventCooldownUntil:0,
+  // НОВОЕ: состояние нового события и магазина
+  newEventUntil:0,
+  newEventCooldownUntil:0,
+  eventShopPurchased: {}, // купленные предметы
+  // НОВОЕ: состояние питомцев
+  pets: {}, // {petId: { purchased: true, hatched: false }}
+  selectedPets: [], // массив до 2 элементов
+  quest: { id:'q1', type:'clicks', progress:0, goal:10, reward:15 },
+  // НОВОЕ: язык по умолчанию
+  lang: 'ru',
+  // НОВОЕ: достижения
+  achievements: {}
+};
+
+let state = loadState();
+let lang = state.lang || 'ru'; // Текущий язык
+
+// ---------- DOM refs ----------
+const coinsEl = document.getElementById('coins');
+const lvlEl = document.getElementById('lvl');
+const ppsEl = document.getElementById('pps');
+const rarePctEl = document.getElementById('rarePct');
+const multEl = document.getElementById('mult');
+const petMultEl = document.getElementById('petMult'); // НОВОЕ
+const feedEl = document.getElementById('feed');
+const upgradesGrid = document.getElementById('upgradesGrid');
+const eventShopGrid = document.getElementById('eventShopGrid');
+const petsShopGrid = document.getElementById('petsShopGrid'); // НОВОЕ
+const petsShopSection = document.getElementById('petsShopSection'); // НОВОЕ
+const eventShopSection = document.getElementById('eventShopSection');
+const invEl = document.getElementById('inventory');
+const xpbar = document.getElementById('xpbar');
+const tryBtn = document.getElementById('tryBtn');
+const spinBtn = document.getElementById('spinWheel');
+const toggleAutoBtn = document.getElementById('toggleAuto');
+const toast = document.getElementById('toast');
+const eventBtn = document.getElementById('eventBtn');
+const newEventBtn = document.getElementById('newEventBtn');
+const petsBtn = document.getElementById('petsBtn'); // НОВОЕ
+const eventStatus = document.getElementById('eventStatus');
+const questArea = document.getElementById('questArea');
+const exportBtn = document.getElementById('exportState');
+const importBtn = document.getElementById('importState');
+const resetBtn = document.getElementById('resetAll');
+const langBtns = document.querySelectorAll('.lang-btn');
+// НОВОЕ: питомцы
+const petSlot1 = document.getElementById('petSlot1');
+const petSlot2 = document.getElementById('petSlot2');
+const petModal = document.getElementById('petModal');
+const petInventoryGrid = document.getElementById('petInventoryGrid');
+const closePetModal = document.getElementById('closePetModal');
+const savePetsBtn = document.getElementById('savePetsBtn');
+const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+const sidePanel = document.getElementById('sidePanel');
+// НОВОЕ: достижения
+const achievementsSection = document.getElementById('achievementsSection');
+const achievementsList = document.getElementById('achievementsList');
+const achievementsCounter = document.getElementById('achievementsCounter');
+
+// ---------- helpers ----------
+function loadState(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return JSON.parse(JSON.stringify(defaultState));
+    return {...JSON.parse(JSON.stringify(defaultState)), ...JSON.parse(raw)};
+  } catch(e) {
+    return JSON.parse(JSON.stringify(defaultState));
+  }
+}
+function saveState(){ 
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); 
+  // Сохраняем язык
+  state.lang = lang;
+}
+function deepClone(o){ return JSON.parse(JSON.stringify(o)); }
+function randInt(min,max){ return Math.floor(min + Math.random()*(max-min+1)); }
+function randFloat(min,max){ return Math.random() * (max - min) + min; }
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function showToast(msg, ms=1200){ toast.textContent = msg; toast.style.display = 'block'; setTimeout(()=> toast.style.display='none', ms); }
+function renderFeed(msg){ const d=document.createElement('div'); d.className='item'; d.innerHTML=`<div style="flex:1"><div style="font-weight:700">${msg}</div><div class="small">${new Date().toLocaleTimeString()}</div></div>`; feedEl.prepend(d); while(feedEl.children.length>200) feedEl.removeChild(feedEl.lastChild); }
+function showFeed(msg, ms=1200){ renderFeed(msg); showToast(msg, ms); }
+
+// НОВОЕ: функция проверки достижений
+function checkAchievements() {
+  let newAchievements = 0;
+  
+  ACHIEVEMENTS.forEach(ach => {
+    // Если достижение уже получено, пропускаем
+    if (state.achievements?.[ach.id]) return;
+    
+    // Проверяем условие
+    if (ach.condition()) {
+      // Отмечаем как полученное
+      state.achievements = state.achievements || {};
+      state.achievements[ach.id] = true;
+      
+      // Добавляем награду
+      state.coins += ach.reward;
+      
+      // Показываем уведомление
+      const t = translations[lang];
+      const name = t[ach.name];
+      const desc = t[ach.desc];
+      
+      showFeed(`🏆 ДОСТИЖЕНИЕ: ${name}! +${ach.reward} монет`);
+      showToast(`Достижение получено: ${name}`, 2500);
+      
+      // Показываем анимированное уведомление сверху
+      const achievementEl = document.createElement('div');
+      achievementEl.className = 'achievement-notification';
+      achievementEl.innerHTML = `🏆 <b>${name}</b>: ${desc} (+${ach.reward} мон.)`;
+      document.body.appendChild(achievementEl);
+      
+      setTimeout(() => {
+        achievementEl.style.opacity = '0';
+        setTimeout(() => achievementEl.remove(), 1000);
+      }, 3000);
+      
+      newAchievements++;
+    }
+  });
+  
+  if (newAchievements > 0) {
+    saveState();
+    renderAchievements();
+  }
+}
+
+// НОВОЕ: отображение достижений
+function renderAchievements() {
+  if (!achievementsList) return;
+  
+  // Считаем количество полученных достижений
+  const completed = Object.keys(state.achievements || {}).length;
+  const total = ACHIEVEMENTS.length;
+  
+  // Обновляем счетчик
+  achievementsCounter.textContent = `(${completed}/${total})`;
+  
+  // Очищаем список
+  achievementsList.innerHTML = '';
+  
+  // Добавляем каждое достижение
+  ACHIEVEMENTS.forEach(ach => {
+    const isCompleted = state.achievements?.[ach.id];
+    const t = translations[lang];
+    
+    const item = document.createElement('div');
+    item.className = `achievement-item ${isCompleted ? 'achievement-completed' : ''}`;
+    item.innerHTML = `
+      <div class="achievement-icon">${isCompleted ? '✓' : '🏆'}</div>
+      <div class="achievement-info">
+        <div class="name">${t[ach.name]}</div>
+        <div class="desc">${t[ach.desc]}</div>
+      </div>
+      <div class="achievement-reward">+${ach.reward} мон.</div>
+    `;
+    
+    achievementsList.appendChild(item);
+  });
+}
+
+// ---------- НОВОЕ: перевод интерфейса ----------
+function updateLanguage() {
+  const t = translations[lang];
+  
+  document.querySelector('.title').textContent = t.title;
+  document.querySelector('.small').textContent = t.subtitle;
+  document.querySelectorAll('.stat .small')[0].textContent = t.coins;
+  document.querySelectorAll('.stat .small')[1].textContent = t.level;
+  document.querySelectorAll('.stat .small')[2].textContent = t.passive;
+  
+  tryBtn.textContent = t.tryBtn;
+  spinBtn.textContent = t.spinWheel;
+  toggleAutoBtn.textContent = t.auto + ': ' + (state.autoEnabled ? 'вкл' : 'выкл');
+  
+  document.querySelector('.small').textContent = t.xpToLevel;
+  document.querySelectorAll('.section strong')[0].textContent = t.quest;
+  document.querySelectorAll('.section strong')[1].textContent = t.events;
+  document.querySelectorAll('.small')[1].textContent = t.eventDesc;
+  eventBtn.textContent = t.eventBtn1;
+  newEventBtn.textContent = t.eventBtn2;
+  petsBtn.textContent = t.petsBtn; // НОВОЕ
+  
+  if(!isEventActive() && !isNewEventActive()) {
+    eventStatus.textContent = t.noEventActive;
+  }
+  
+  document.querySelectorAll('.section strong')[3].textContent = t.eventShopTitle;
+  document.querySelectorAll('.small')[3].textContent = t.eventShopDesc;
+  
+  // НОВОЕ: перевод магазина питомцев
+  document.querySelectorAll('.section strong')[4].textContent = t.petsShopTitle;
+  document.querySelectorAll('.small')[4].textContent = t.petsShopDesc;
+  
+  // НОВОЕ: перевод достижений
+  document.querySelectorAll('.section strong')[5].textContent = t.achievements;
+  document.querySelectorAll('.small')[4].textContent = t.achievementsDesc;
+  
+  document.querySelectorAll('.section strong')[6].textContent = t.inventory;
+  document.querySelectorAll('.section strong')[7].textContent = t.upgrades;
+  document.querySelectorAll('.section strong')[8].textContent = t.stats;
+  
+  document.querySelectorAll('.small')[5].textContent = t.controls;
+  exportBtn.textContent = t.exportBtn;
+  importBtn.textContent = t.importBtn;
+  resetBtn.textContent = t.resetBtn;
+  
+  document.querySelector('.footer').textContent = t.footer;
+  document.querySelectorAll('.small')[6].textContent = t.rareChance;
+  document.querySelectorAll('.small')[7].textContent = t.multiplier;
+  document.querySelectorAll('.small')[8].textContent = t.passive;
+  
+  // Обновляем активный язык в кнопках
+  langBtns.forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.lang === lang);
+  });
+  
+  // НОВОЕ: обновляем тексты в питомцах
+  renderPetsShop();
+  renderPetSlots();
+  renderPetModal();
+  renderAchievements(); // НОВОЕ: обновляем достижения
+}
+
+// Устанавливаем язык при загрузке
+updateLanguage();
+
+// Обработчики для кнопок языка
+langBtns.forEach(btn => {
+  btn.onclick = () => {
+    lang = btn.dataset.lang;
+    state.lang = lang;
+    saveState();
+    updateLanguage();
+    showFeed(`Язык изменен на ${lang === 'ru' ? 'Русский' : lang === 'en' ? 'English' : 'Čeština'}`);
+  };
+});
+
+// ---------- CD logic ----------
+function effectiveCooldownMs(){ return Math.max(MIN_COOLDOWN_MS, BASE_COOLDOWN_MS - (state.cooldownReductionMs || 0)); }
+function setTryCooldown(ms){ state.tryCooldownUntil = Date.now() + ms; saveState(); updateTryButton(); if(window._cdInterval) clearInterval(window._cdInterval); window._cdInterval = setInterval(()=>{ updateTryButton(); if(Date.now() >= (state.tryCooldownUntil || 0)){ clearInterval(window._cdInterval); window._cdInterval = null; } }, 200); }
+function isTryOnCooldown(){ return Date.now() < (state.tryCooldownUntil || 0); }
+function updateTryButton(){ if(isTryOnCooldown()){ const left = Math.ceil(((state.tryCooldownUntil||0) - Date.now())/1000); tryBtn.disabled = true; tryBtn.textContent = `Подождите ${left}s`; } else { tryBtn.disabled = false; tryBtn.textContent = translations[lang].tryBtn; } }
+
+// ---------- Upgrades generation ----------
+const UPGRADE_COUNT = 100;
+const upgrades = [];
+(function genUpgrades(){
+  for(let i=1;i<=UPGRADE_COUNT;i++){
+    let tier='small';
+    if(i%10===0) tier='large';
+    else if(i%3===0) tier='medium';
+    const id = 'u'+i;
+    const name = `${tier==='large'?'Великий':'Улучшение'} #${i}`;
+    const timerBase = (tier==='large') ? 5000 : Math.max(1000, 5000 - i*30);
+    
+    // НОВОЕ: увеличены цены на 25%
+    const cost = Math.round((i*12) * (tier==='large'?6.25: tier==='medium'?2.5:1.25));
+    
+    let effect;
+    // НОВОЕ: усилены эффекты на 50%
+    if(i % 11 === 0) effect = {type:'item', id:'wheel_ticket', qty:(tier==='large'?4:1)};
+    else if(i % 7 === 0) effect = {type:'pps', val:(tier==='large'?6: tier==='medium'?1.8:0.22)};
+    else if(i % 5 === 0) effect = {type:'rare', val:(tier==='large'?4.5: tier==='medium'?1.5:0.3)};
+    else if(i % 3 === 0) effect = {type:'mult', val:(tier==='large'?0.75: tier==='medium'?0.18:0.03)};
+    else { const val = (tier==='large'?1500: tier==='medium'?375:150); effect = {type:'cd', val}; }
+    
+    upgrades.push({id,name,tier,timerBase,cost,effect,description:effectDesc(effect)});
+  }
+  // НОВОЕ: усилен автоповтор
+  upgrades.unshift({ 
+    id:'auto_opener', 
+    name:'Автоповтор (апгрейд)', 
+    tier:'special', 
+    timerBase:0, 
+    cost:500, // +100 монет
+    effect:{type:'auto', val:1}, 
+    description:'Покупаемый автоповтор. Каждый уровень уменьшает интервал авто.' 
+  });
+})();
+function effectDesc(e){ 
+  if(!e||!e.type) return 'Бонус'; 
+  switch(e.type){ 
+    case 'cd': return `Сокращает CD на ${e.val/1000}s`; 
+    case 'mult': return `Увеличивает множитель на ${(e.val*100).toFixed(0)}%`; 
+    case 'rare': return `+${e.val}% к шансу редких`; 
+    case 'pps': return `Пассив +${e.val}/с`; 
+    case 'item': return `Дает ${e.id} x${e.qty||1}`; 
+    case 'auto': return 'Уровень автоповтора'; 
+    default: return 'Бонус'; 
+  } 
+}
+
+// ---------- Render status/UI ----------
+function renderStats(){ 
+  coinsEl.textContent = Math.floor(state.coins); 
+  lvlEl.textContent = state.lvl; 
+  ppsEl.textContent = (state.pps).toFixed(2) + '/s'; 
+  rarePctEl.textContent = state.rarePct.toFixed(2) + '%'; 
+  multEl.textContent = 'x' + state.mult.toFixed(2); 
+  petMultEl.textContent = 'x' + getCurrentPetMultiplier().toFixed(2); 
+  const pct = clamp(Math.floor((state.xp/state.xpToNext)*100),0,100); 
+  xpbar.style.width = pct + '%'; 
+  toggleAutoBtn.textContent = translations[lang].auto + ': ' + (state.autoEnabled ? 'вкл' : 'выкл'); 
+  updateTryButton(); 
+  renderEventStatus(); 
+  renderQuest(); 
+}
+
+// ---------- Render all ----------
+function renderAll(){ 
+  renderUpgrades(); 
+  renderStats(); 
+  renderInventory(); 
+  renderEventShop();
+  renderPetsShop(); // НОВОЕ
+  renderPetSlots(); // НОВОЕ
+  renderAchievements(); // НОВОЕ: отображаем достижения
+}
+
+// ---------- НОВОЕ: Питомцы ----------
+function getCurrentPetMultiplier() {
+  if (state.selectedPets.length === 0) return 1;
+  if (state.selectedPets.length === 1) {
+    const pet = PETS.find(p => p.id === state.selectedPets[0]);
+    return pet ? pet.multiplier : 1;
+  }
+  const pet1 = PETS.find(p => p.id === state.selectedPets[0]);
+  const pet2 = PETS.find(p => p.id === state.selectedPets[1]);
+  return (pet1 ? pet1.multiplier : 1) * (pet2 ? pet2.multiplier : 1);
+}
+
+function buyPet(petId) {
+  const pet = PETS.find(p => p.id === petId);
+  if (!pet) return;
+  
+  if (state.coins < pet.cost) {
+    showToast(`Нужно ${pet.cost.toLocaleString()} монет!`);
+    return;
+  }
+  
+  // Проверяем, не куплен ли уже
+  if (state.pets[petId] && state.pets[petId].purchased) {
+    showToast('Питомец уже куплен');
+    return;
+  }
+  
+  // Покупаем
+  state.coins -= pet.cost;
+  state.pets[petId] = { purchased: true, hatched: true };
+  
+  saveState();
+  renderAll();
+  showFeed(`${translations[lang].petBought} — ${pet.name}!`);
+  showToast(`Поздравляю! Получен: ${pet.name}`, 2000);
+  
+  // НОВОЕ: проверка достижений
+  checkAchievements();
+}
+
+// НОВОЕ: функция для получения случайного питомца по шансам
+function getRandomPetByChances() {
+  const t = translations[lang];
+  const total = 100;
+  const roll = Math.random() * total;
+  
+  let cumulative = 0;
+  
+  // Проверяем легендарных
+  cumulative += EGG_HATCH_CHANCES.legendary;
+  if (roll < cumulative) {
+    const legendaryPets = PETS.filter(p => p.rarity === 'legendary');
+    if (legendaryPets.length > 0) {
+      return legendaryPets[randInt(0, legendaryPets.length - 1)];
+    }
+  }
+  
+  // Проверяем эпических
+  cumulative += EGG_HATCH_CHANCES.epic;
+  if (roll < cumulative) {
+    const epicPets = PETS.filter(p => p.rarity === 'epic');
+    if (epicPets.length > 0) {
+      return epicPets[randInt(0, epicPets.length - 1)];
+    }
+  }
+  
+  // Проверяем редких
+  cumulative += EGG_HATCH_CHANCES.rare;
+  if (roll < cumulative) {
+    const rarePets = PETS.filter(p => p.rarity === 'rare');
+    if (rarePets.length > 0) {
+      return rarePets[randInt(0, rarePets.length - 1)];
+    }
+  }
+  
+  // Проверяем обычных
+  cumulative += EGG_HATCH_CHANCES.common;
+  if (roll < cumulative) {
+    const commonPets = PETS.filter(p => p.rarity === 'common');
+    if (commonPets.length > 0) {
+      return commonPets[randInt(0, commonPets.length - 1)];
+    }
+  }
+  
+  // Если не подошел ни один (на случай, если нет питомцев нужной редкости)
+  return null;
+}
+
+// НОВОЕ: функция покупки яйца
+function buyPetEgg() {
+  const t = translations[lang];
+  const eggCost = 500; // Цена яйца
+  
+  // НОВОЕ: проверка наличия монет перед покупкой
+  if (state.coins < eggCost) {
+    showToast(t.eggPurchaseFailed.replace('{coins}', eggCost.toLocaleString()));
+    return;
+  }
+  
+  // Покупаем яйцо
+  state.coins -= eggCost;
+  saveState();
+  renderAll();
+  
+  showFeed(t.eggBought);
+  showToast(t.eggBought, 2000);
+  
+  // Запускаем процесс вылупления через 2 секунды
+  setTimeout(() => {
+    const hatchedPet = getRandomPetByChances();
+    
+    if (!hatchedPet) {
+      showFeed(t.eggNoHatchMsg);
+      return;
+    }
+    
+    // Проверяем, не куплен ли уже этот питомец
+    if (state.pets[hatchedPet.id] && state.pets[hatchedPet.id].purchased) {
+      const refund = Math.floor(hatchedPet.cost * 0.2);
+      state.coins += refund;
+      saveState();
+      renderStats();
+      
+      showFeed(`${t.eggDuplicate} — ${hatchedPet.name}!`);
+      showToast(`${t.eggRefund.replace('{coins}', refund.toLocaleString())}`, 1500);
+    } else {
+      // Покупаем питомца
+      state.pets[hatchedPet.id] = { purchased: true, hatched: true };
+      saveState();
+      renderAll();
+      showFeed(`✨ ${t.eggHatched}: ${hatchedPet.name}!`);
+      showToast(`Из яйца вылупился ${hatchedPet.name}!`, 2000);
+      
+      // Проверка достижений
+      checkAchievements();
+    }
+  }, 2000);
+}
+
+function renderPetsShop() {
+  petsShopGrid.innerHTML = '';
+  
+  // Добавляем яйцо с шансами
+  const eggEl = document.createElement('div');
+  eggEl.className = 'pet-shop-item';
+  eggEl.innerHTML = `
+    <div class="pet-icon">🥚</div>
+    <div class="name">${translations[lang].petEgg}</div>
+    <div class="rarity">${translations[lang].eggChancesTitle}</div>
+    <div class="egg-chances">
+      <div class="egg-chance common-chance">${translations[lang].eggCommon}</div>
+      <div class="egg-chance rare-chance">${translations[lang].eggRare}</div>
+      <div class="egg-chance epic-chance">${translations[lang].eggEpic}</div>
+      <div class="egg-chance legendary-chance">${translations[lang].eggLegendary}</div>
+      <div class="egg-chance">${translations[lang].eggNoHatch}</div>
+    </div>
+    <div class="cost">
+      <div style="width:20px;height:20px;background:linear-gradient(180deg,#ffd166,#ffa500);border-radius:50%"></div>
+      <div>500 мон.</div>
+    </div>
+    <button class="btn-ghost">${translations[lang].petEgg}</button>
+  `;
+  
+  const eggBtn = eggEl.querySelector('button');
+  eggBtn.onclick = buyPetEgg;
+  
+  petsShopGrid.appendChild(eggEl);
+  
+  // Отображаем уже купленных питомцев
+  PETS.forEach(pet => {
+    const isPurchased = state.pets[pet.id] && state.pets[pet.id].purchased;
+    const isHatched = isPurchased && state.pets[pet.id].hatched;
+    
+    if (!isHatched) return;
+    
+    const el = document.createElement('div');
+    el.className = `pet-shop-item ${isPurchased ? 'purchased' : ''} ${isHatched ? 'hatched' : ''} ${pet.rarity}`;
+    el.innerHTML = `
+      <div class="pet-icon">${pet.icon}</div>
+      <div class="name">${pet.name}</div>
+      <div class="rarity">${pet.desc}</div>
+      <div class="cost">
+        <div style="width:20px;height:20px;background:linear-gradient(180deg,#ffd166,#ffa500);border-radius:50%"></div>
+        <div>${pet.cost.toLocaleString()} мон.</div>
+      </div>
+      <button class="btn-ghost">${isPurchased ? translations[lang].upgradePurchased : translations[lang].upgradeBuy}</button>
+    `;
+    
+    const btn = el.querySelector('button');
+    btn.onclick = () => buyPet(pet.id);
+    
+    petsShopGrid.appendChild(el);
+  });
+}
+
+function renderPetSlots() {
+  // Очищаем слоты
+  petSlot1.innerHTML = '';
+  petSlot2.innerHTML = '';
+  petSlot1.className = 'pet-slot';
+  petSlot2.className = 'pet-slot';
+  
+  // Заполняем слоты выбранными питомцами
+  if (state.selectedPets.length > 0) {
+    const pet1 = PETS.find(p => p.id === state.selectedPets[0]);
+    if (pet1) {
+      petSlot1.innerHTML = pet1.icon;
+      petSlot1.classList.add('selected');
+    }
+  }
+  
+  if (state.selectedPets.length > 1) {
+    const pet2 = PETS.find(p => p.id === state.selectedPets[1]);
+    if (pet2) {
+      petSlot2.innerHTML = pet2.icon;
+      petSlot2.classList.add('selected');
+    }
+  }
+}
+
+function renderPetModal() {
+  petInventoryGrid.innerHTML = '';
+  
+  PETS.forEach(pet => {
+    const isPurchased = state.pets[pet.id] && state.pets[pet.id].purchased;
+    const isHatched = isPurchased && state.pets[pet.id].hatched;
+    const isSelected = state.selectedPets.includes(pet.id);
+    
+    if (!isPurchased || !isHatched) return;
+    
+    const el = document.createElement('div');
+    el.className = `pet-shop-item ${pet.rarity} ${isSelected ? 'selected' : ''}`;
+    el.innerHTML = `
+      <div class="pet-icon">${pet.icon}</div>
+      <div class="name">${pet.name}</div>
+      <div class="rarity">${pet.desc} (x${pet.multiplier})</div>
+      <div style="text-align:center;margin-top:4px">
+        <button class="btn-ghost" style="padding:4px 8px;font-size:12px">
+          ${isSelected ? 'Убрать' : 'Выбрать'}
+        </button>
+      </div>
+    `;
+    
+    const btn = el.querySelector('button');
+    btn.onclick = () => togglePetSelection(pet.id);
+    
+    petInventoryGrid.appendChild(el);
+  });
+}
+
+function togglePetSelection(petId) {
+  // Если питомец не куплен или не вылупился, выходим
+  if (!state.pets[petId] || !state.pets[petId].purchased || !state.pets[petId].hatched) {
+    return;
+  }
+  
+  const index = state.selectedPets.indexOf(petId);
+  
+  if (index > -1) {
+    // Удаляем из выбора
+    state.selectedPets.splice(index, 1);
+  } else {
+    // Добавляем в выбор (максимум 2)
+    if (state.selectedPets.length < 2) {
+      state.selectedPets.push(petId);
+    } else {
+      showToast(translations[lang].petMax);
+    }
+  }
+  
+  renderPetModal();
+}
+
+function savePetSelection() {
+  saveState();
+  renderAll();
+  petModal.style.display = 'none';
+  showFeed(translations[lang].petActivated);
+}
+
+// НОВОЕ: функции для нового события
+function isNewEventActive(){ return Date.now() < (state.newEventUntil || 0); }
+function isNewEventCooling(){ return Date.now() < (state.newEventCooldownUntil || 0); }
+
+// activateEvent source: 'manual' or 'auto'
+function activateEvent(source='manual'){
+  if(isEventActive() || isEventCooling()) return false;
+  state.eventUntil = Date.now() + EVENT_DURATION_MS;
+  state.eventCooldownUntil = state.eventUntil + EVENT_COOLDOWN_MS;
+  saveState();
+  showFeed(`${translations[lang].eventBtn1} активирован${source==='auto'?' автоматически!':''} — x2 монеты ${EVENT_DURATION_MS/1000}s`);
+  renderEventStatus();
+  // ensure periodic UI updates
+  if(window._eventInterval) clearInterval(window._eventInterval);
+  window._eventInterval = setInterval(renderEventStatus, 500);
+  return true;
+}
+
+// НОВОЕ: активация нового события
+function activateNewEvent(source='manual'){
+  if(isNewEventActive() || isNewEventCooling()) return false;
+  state.newEventUntil = Date.now() + NEW_EVENT_DURATION_MS;
+  state.newEventCooldownUntil = state.newEventUntil + NEW_EVENT_COOLDOWN_MS;
+  saveState();
+  showFeed(`${translations[lang].eventBtn2} активирован${source==='auto'?' автоматически!':''} — открывай ЭПИЧНЫЙ МАГАЗИН!`);
+  renderEventStatus();
+  renderEventShop(); // Показываем магазин сразу
+  
+  // НОВОЕ: добавлен интервал для обновления статуса
+  if(window._newEventInterval) clearInterval(window._newEventInterval);
+  window._newEventInterval = setInterval(renderEventStatus, 500);
+  
+  return true;
+}
+
+eventBtn.onclick = ()=> { if(activateEvent('manual')) saveState(); };
+newEventBtn.onclick = ()=> { if(activateNewEvent('manual')) saveState(); };
+
+// ---------- Auto-opener ----------
+let autoInterval = null;
+function getAutoInterval(){ const lvl = state.autoOpenerLevel || 0; const reduction = Math.min(0.85, lvl * 0.06); return Math.max(MIN_COOLDOWN_MS, Math.round(BASE_COOLDOWN_MS * (1 - reduction))); }
+function ensureAuto(){ if(state.autoEnabled && (state.autoOpenerLevel || 0) > 0){ if(autoInterval) clearInterval(autoInterval); autoInterval = setInterval(()=> tryLuck(), getAutoInterval()); } else { if(autoInterval){ clearInterval(autoInterval); autoInterval = null; } } }
+
+// ---------- Wheel ----------
+function spinWheel(){ if(!(state.inventory['wheel_ticket']>0)){ renderFeed('Нет билета колеса'); return; } state.inventory['wheel_ticket'] -= 1; if(state.inventory['wheel_ticket']<=0) delete state.inventory['wheel_ticket']; renderFeed('Крутим колесо...'); setTimeout(()=>{ const r = randInt(0,3); if(r===0){ state.coins += 20; renderFeed('Колесо: +20'); } else if(r===1){ state.coins += 200; renderFeed('Колесо: +200'); } else if(r===2){ state.inventory['Редкий артефакт'] = (state.inventory['Редкий артефакт']||0)+1; renderFeed('Колесо: редкий предмет'); } else renderFeed('Колесо: пусто'); saveState(); renderAll(); animateCoinsBurst(8); }, 900); }
+
+// ---------- Quest system ----------
+function renderQuest(){ if(!state.quest) { questArea.innerHTML = '<div class="small">Нет квеста</div>'; return; } const q = state.quest; questArea.innerHTML = `<div class="quest-row"><div><strong>${translations[lang].quest}:</strong> ${qDesc(q)}</div><div><button class="btn-ghost" onclick="claimQuest()">Проверить</button></div></div>`; }
+function qDesc(q){ if(q.type==='clicks') return `Сделай кликов: ${q.progress}/${q.goal} — награда ${q.reward} мон.`; if(q.type==='upgrade') return `Купи апгрейды: ${q.progress}/${q.goal} — награда ${q.reward} мон.`; if(q.type==='money') return `Набери монет: ${Math.floor(state.coins)}/${q.goal} — награда ${q.reward} мон.`; return `${q.type}: ${q.progress}/${q.goal}`; }
+function checkQuestComplete(){ if(!state.quest) return; const q = state.quest; if(q.type==='clicks' && q.progress>=q.goal) completeQuest(); if(q.type==='upgrade' && q.progress>=q.goal) completeQuest(); if(q.type==='money' && state.coins>=q.goal) completeQuest(); }
+function completeQuest(){ const q = state.quest; if(!q) return; state.coins += q.reward; showFeed(`Квест выполнен! +${q.reward} монет`); const templates = [ {type:'clicks', goal:randInt(8,20), reward:Math.round(randInt(10,30))}, {type:'upgrade', goal:1+randInt(0,2), reward:Math.round(randInt(15,40))}, {type:'money', goal:randInt(40,150), reward:Math.round(randInt(20,60))} ]; const pick = templates[randInt(0,templates.length-1)]; state.quest = { id:'q'+Date.now(), type:pick.type, progress:0, goal:pick.goal, reward:pick.reward }; saveState(); renderQuest(); renderStats(); }
+function claimQuest(){ checkQuestComplete(); renderQuest(); }
+
+// ---------- Inventory render ----------
+function renderInventory(){ invEl.innerHTML=''; const keys = Object.keys(state.inventory); if(keys.length===0){ invEl.innerHTML='<div class="small">Пусто</div>'; return; } keys.forEach(k=>{ const el = document.createElement('div'); el.className='inv-item'; el.style.display='flex'; el.style.justifyContent='space-between'; el.style.padding='6px'; el.style.borderRadius='6px'; el.innerHTML=`<div>${k}</div><div>x${state.inventory[k]}</div>`; invEl.appendChild(el); }); }
+
+// ---------- НОВОЕ: Эпический ивент-магазин ----------
+function renderEventShop(){
+  if (!eventShopGrid) return; // Защита от null
+
+  // Показываем магазин только во время НОВОГО события
+  if(isNewEventActive()){
+    eventShopSection.style.display = 'block';
+  } else {
+    eventShopSection.style.display = 'none';
+  }
+
+  eventShopGrid.innerHTML = '';
+  EVENT_SHOP_ITEMS.forEach(item => {
+    // Проверяем, куплен ли предмет
+    const isPurchased = state.eventShopPurchased[item.id] === true;
+    
+    const el = document.createElement('div');
+    el.className = `event-shop-item ${isPurchased ? 'sold' : ''}`;
+    el.innerHTML = `
+      <div class="epic-tag">ЭПИК</div>
+      <div class="name">${item.name}</div>
+      <div class="desc">${item.desc}</div>
+      <div class="cost">
+        <div style="width:20px;height:20px;background:linear-gradient(180deg,#ffd166,#ffa500);border-radius:50%"></div>
+        <div>${item.cost.toLocaleString()} мон.</div>
+      </div>
+      <button class="btn-ghost" ${isPurchased ? 'disabled' : ''}>${isPurchased ? translations[lang].upgradePurchased : translations[lang].upgradeBuy} за ${item.cost}</button>
+    `;
+    
+    // Добавляем обработчик клика
+    if(!isPurchased) {
+      const btn = el.querySelector('button');
+      btn.onclick = () => buyEventShopItem(item);
+    }
+    
+    eventShopGrid.appendChild(el);
+  });
+}
+
+function buyEventShopItem(item){
+  if(state.coins < item.cost){
+    showToast(`Нужно ${item.cost.toLocaleString()} монет!`);
+    return;
+  }
+  
+  // Проверяем, не куплен ли уже
+  if(state.eventShopPurchased[item.id] === true){
+    showToast('Предмет уже куплен');
+    return;
+  }
+  
+  // Покупаем
+  state.coins -= item.cost;
+  state.eventShopPurchased[item.id] = true;
+  
+  // Применяем эффект
+  applyEffectWithBuff(item.effect);
+  
+  // Сохраняем и обновляем
+  saveState();
+  renderAll();
+  
+  // Эпичная анимация
+  animateCoinsBurst(12);
+  showFeed(`✨ ПОКУПКА: ${item.name} — ${item.desc}!`);
+  showToast(`Поздравляю! Получен: ${item.name}`, 2000);
+}
+
+// ---------- Coins animation ----------
+function animateCoinsBurst(count){
+  const area = document.querySelector('.play-area'); const rect = area.getBoundingClientRect();
+  for(let i=0;i<count;i++){
+    const c = document.createElement('div'); c.className='coin-fx';
+    const x = randInt(rect.left+40, rect.right-40); const y = randInt(rect.top+40, rect.bottom-40);
+    c.style.left = x + 'px'; c.style.top = y + 'px'; c.style.opacity = '1'; document.body.appendChild(c);
+    setTimeout(()=>{ const t = coinsEl.getBoundingClientRect(); c.style.transform = `translate(${t.left - x + 10}px, ${t.top - y}px) scale(0.2)`; c.style.opacity='0'; }, 50 + i*15);
+    setTimeout(()=> c.remove(), 800 + i*10);
+  }
+}
+
+// ---------- Try (Испытать удачу) + random event activation ----------
+function tryLuck(){
+  if(isTryOnCooldown()){ renderFeed('Подождите, пока CD не закончится.'); return; }
+  setTryCooldown(effectiveCooldownMs());
+  state.stats.tries = (state.stats.tries || 0) + 1;
+  
+  // НОВОЕ: проверка достижений
+  checkAchievements();
+
+  // random event chance for EVENT1 (Релизный фестиваль)
+  if(!isEventActive() && !isEventCooling() && !isNewEventActive() && !isNewEventCooling()){
+    const chance = randFloat(RANDOM_EVENT_MIN, RANDOM_EVENT_MAX);
+    if(Math.random() < chance){
+      activateEvent('auto'); // auto-triggered by random chance
+    }
+  }
+
+  // НОВОЕ: множитель для нового события
+  const eventMult = isEventActive() ? 2 : (isNewEventActive() ? 1.5 : 1);
+  
+  // НОВОЕ: множитель от питомцев (произведение множителей двух питомцев)
+  const petMult = getCurrentPetMultiplier();
+  
+  // Общий множитель
+  const totalMult = eventMult * petMult;
+  
+  // НОВОЕ: шанс редких для нового события
+  const rareChance = state.rarePct + (isNewEventActive() ? 3 : 0);
+  
+  const roll = Math.random() * 100; let base = 0;
+  if(roll < rareChance){
+    base = randInt(25,90); const tot = Math.floor(base * state.mult * totalMult); state.coins += tot; state.stats.rare = (state.stats.rare||0)+1; renderFeed(`Редкая удача! +${tot} монет`); if(Math.random()<0.25){ state.inventory['Редкий артефакт'] = (state.inventory['Редкий артефакт']||0)+1; renderFeed('Пойман редкий артефакт!'); }
+  } else if(roll > 99){
+    base = randInt(200,800); const tot = Math.floor(base * state.mult * totalMult); state.coins += tot; state.stats.epic = (state.stats.epic||0)+1; renderFeed(`Эпическая удача! +${tot} монет`); state.inventory['Эпический артефакт'] = (state.inventory['Эпический артефакт']||0)+1;
+  } else {
+    base = randInt(1,8); const tot = Math.floor(base * state.mult * totalMult); state.coins += tot; renderFeed(`Обычный результат: +${tot} монет`);
+  }
+
+  state.xp += Math.max(1, Math.floor(base/2));
+  if(state.xp >= state.xpToNext){ state.xp -= state.xpToNext; state.lvl += 1; state.xpToNext = Math.floor(state.xpToNext * 1.25); renderFeed(`Уровень повышен до ${state.lvl}`); }
+
+  if(Math.random() < 0.03){ state.inventory['wheel_ticket'] = (state.inventory['wheel_ticket']||0) + 1; renderFeed('Получен билет колеса!'); }
+
+  // quest progress
+  if(state.quest){
+    if(state.quest.type === 'clicks'){ state.quest.progress++; checkQuestComplete(); }
+    if(state.quest.type === 'money'){ if(state.coins >= state.quest.goal) checkQuestComplete(); }
+  }
+
+  saveState(); renderAll(); animateCoinsBurst(6);
+}
+
+// ---------- Event helpers ----------
+function isEventActive(){ return Date.now() < (state.eventUntil || 0); }
+function isEventCooling(){ return Date.now() < (state.eventCooldownUntil || 0); }
+
+// ---------- Render status/UI ----------
+function renderEventStatus(){
+  let statusText = '';
+  
+  if(isEventActive()){
+    const left = Math.ceil((state.eventUntil - Date.now())/1000);
+    statusText += `<div>🎉 ${translations[lang].eventBtn1}: ${left}s (x2)</div>`;
+    eventBtn.disabled = true;
+  } else if(isEventCooling()){
+    const left = Math.ceil((state.eventCooldownUntil - Date.now())/1000);
+    statusText += `<div class="small">⏳ ${translations[lang].eventBtn1}: ${left}s</div>`;
+    eventBtn.disabled = true;
+  } else {
+    eventBtn.disabled = false;
+  }
+  
+  if(isNewEventActive()){
+    const left = Math.ceil((state.newEventUntil - Date.now())/1000);
+    statusText += `<div style="color:#ff7ec7">✨ ${translations[lang].eventBtn2}: ${left}s (МАГАЗИН ОТКРЫТ!)</div>`;
+    newEventBtn.disabled = true;
+  } else if(isNewEventCooling()){
+    const left = Math.ceil((state.newEventCooldownUntil - Date.now())/1000);
+    statusText += `<div class="small">⏳ ${translations[lang].eventBtn2}: ${left}s</div>`;
+    newEventBtn.disabled = true;
+  } else {
+    newEventBtn.disabled = false;
+  }
+  
+  if(!statusText) statusText = `<div class="small">${translations[lang].noEventActive}</div>`;
+  eventStatus.innerHTML = statusText;
+}
+
+// ---------- Render upgrades ----------
+function renderUpgrades(){
+  upgradesGrid.innerHTML = '';
+  upgrades.forEach(u=>{
+    const unlocked = !!state.upgradesUnlocked[u.id];
+    const inProg = !!state.upgradesInProgress[u.id];
+    const meta = state.upgradesInProgress[u.id];
+    const remains = inProg ? Math.max(0, meta.endsAt - Date.now()) : 0;
+    const total = u.timerBase || 1;
+    const filled = inProg ? Math.round((1 - remains/total)*100) : 0;
+    const card = document.createElement('div'); card.className='upgrade-card';
+    card.innerHTML = `
+      <div class="upgrade-top">
+        <div style="width:44px;height:44px;border-radius:8px;background:${u.tier==='large'?'linear-gradient(135deg,#ffb84d,#ff7a5a)':'linear-gradient(135deg,#7fd3ff,#5ea6ff)'};display:flex;align-items:center;justify-content:center;font-weight:700">${u.id==='auto_opener'?'A':u.id.replace('u','')}</div>
+        <div style="flex:1">
+          <div class="upgrade-name">${u.name}</div>
+          <div class="upgrade-meta">${u.description}</div>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="small">Стоимость: ${u.cost} мон.</div>
+        <div class="upgrade-actions">
+          <button class="action-btn btn-ghost" data-id="${u.id}" data-action="info">i</button>
+          <button class="action-btn open-btn" data-id="${u.id}" ${unlocked||inProg ? 'disabled' : ''}>
+            ${unlocked ? translations[lang].upgradePurchased : inProg ? translations[lang].upgradeInProgress : translations[lang].upgradeBuy}
+          </button>
+        </div>
+      </div>
+      <div class="progress"><i id="prog-${u.id}" style="width:${filled}%"></i></div>
+    `;
+    upgradesGrid.appendChild(card);
+  });
+  
+  // Обработчик для кнопки информации
+  upgradesGrid.querySelectorAll('[data-action="info"]').forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.dataset.id;
+      const u = upgrades.find(x => x.id === id);
+      if (u) {
+        showToast(`${u.name}: ${u.description}`, 1000);
+      }
+    };
+  });
+  
+  // Обработчик для кнопки покупки
+  upgradesGrid.querySelectorAll('.open-btn').forEach(btn => {
+    btn.onclick = () => onUpgradeOpen(btn.dataset.id);
+  });
+}
+
+// ---------- Open upgrade ----------
+function onUpgradeOpen(id){
+  const u = upgrades.find(x=>x.id===id); if(!u) return;
+  if(state.upgradesUnlocked[id]){ showToast(translations[lang].upgradePurchased); return; }
+  if(state.upgradesInProgress[id]){ showToast(translations[lang].upgradeInProgress); return; }
+  if(state.coins < u.cost){ showToast('Недостаточно монет'); return; }
+
+  // ПОЛНОСТЬЮ УБРАНА РАЗНИЦА МЕЖДУ "ОТКРЫТЬ" И "КУПИТЬ"
+  state.coins -= u.cost; state.upgradesInProgress[id] = {endsAt: Date.now() + u.timerBase}; saveState(); renderUpgrades(); renderStats();
+  showFeed(`Покупка запущена: ${u.name} (${Math.round(u.timerBase/1000)}s)`); startProgressLoop();
+}
+
+// ---------- Progress loop ----------
+let progressActive = false;
+function startProgressLoop(){
+  if(progressActive) return; progressActive = true;
+  const loop = ()=> {
+    const ids = Object.keys(state.upgradesInProgress);
+    ids.forEach(id=>{
+      const meta = state.upgradesInProgress[id]; const u = upgrades.find(x=>x.id===id); if(!meta||!u) return;
+      const total = u.timerBase || 1; const remains = Math.max(0, meta.endsAt - Date.now());
+      const progEl = document.getElementById('prog-'+id); if(progEl) progEl.style.width = Math.round((1 - remains/total)*100) + '%';
+      if(remains <= 0) finishUpgrade(id);
+    });
+    if(Object.keys(state.upgradesInProgress).length === 0){ progressActive = false; return; }
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+}
+
+// ---------- Finish upgrade ----------
+function finishUpgrade(id){
+  if(!state.upgradesInProgress[id]) return;
+  const u = upgrades.find(x=>x.id===id); if(!u){ delete state.upgradesInProgress[id]; saveState(); renderUpgrades(); return; }
+  applyEffectWithBuff(u.effect); state.upgradesUnlocked[id] = true; delete state.upgradesInProgress[id];
+  // НОВОЕ: сильнее ускорение таймеров
+  upgrades.forEach(g=>{ if(g.tier !== 'large' && g.id !== 'auto_opener') g.timerBase = Math.max(700, g.timerBase - 7); });
+  saveState(); renderUpgrades(); renderStats(); renderInventory();
+  showFeed(`Куплено: ${u.name}`); if(u.effect && u.effect.type === 'cd') animateCoinsBurst(10); else animateCoinsBurst(8);
+  if(state.quest && state.quest.type === 'upgrade'){ state.quest.progress++; checkQuestComplete(); }
+  
+  // НОВОЕ: проверка достижений
+  checkAchievements();
+}
+
+// ---------- Apply effect with small buff ----------
+function applyEffectWithBuff(e){
+  if(!e) return;
+  switch(e.type){
+    case 'cd':
+      const cdBuff = Math.round((e.val || 0) * 1.10); // +10% вместо 5%
+      state.cooldownReductionMs = (state.cooldownReductionMs || 0) + cdBuff;
+      state.cooldownReductionMs = Math.min(state.cooldownReductionMs, BASE_COOLDOWN_MS - MIN_COOLDOWN_MS);
+      renderFeed(`CD уменьшен на ${(cdBuff/1000).toFixed(2)}s (итого ${(state.cooldownReductionMs/1000).toFixed(2)}s)`);
+      break;
+    case 'mult':
+      const multVal = (e.val || 0) * 1.15; // +15% вместо 10%
+      state.mult *= (1 + multVal);
+      renderFeed(`Множитель +${(multVal*100).toFixed(0)}% (текущий x${state.mult.toFixed(2)})`);
+      break;
+    case 'rare':
+      const rareVal = (e.val || 0) * 1.15; // +15% вместо 10%
+      state.rarePct += rareVal; 
+      renderFeed(`Шанс редких +${rareVal.toFixed(2)}% (итого ${state.rarePct.toFixed(2)}%)`);
+      break;
+    case 'pps':
+      const ppsVal = (e.val || 0) * 1.15; // +15% вместо 10%
+      state.pps += ppsVal; 
+      renderFeed(`Пассив +${ppsVal.toFixed(2)}/с`);
+      break;
+    case 'item':
+      state.inventory[e.id] = (state.inventory[e.id] || 0) + (e.qty || 1); 
+      renderFeed(`Получен предмет: ${e.id} x${e.qty || 1}`);
+      break;
+    default:
+      renderFeed('Применён бонус');
+  }
+}
+
+// ---------- Background tick (passive income + complete upgrades) ----------
+setInterval(()=>{
+  if(state.pps > 0){ state.coins += state.pps; state.stats.passive = (state.stats.passive||0) + state.pps; saveState(); }
+  const ids = Object.keys(state.upgradesInProgress); ids.forEach(id=>{ if(Date.now() >= state.upgradesInProgress[id].endsAt) finishUpgrade(id); });
+  renderStats();
+}, 1000);
+
+// ---------- Buttons and bindings ----------
+tryBtn.onclick = tryLuck; 
+spinBtn.onclick = spinWheel; 
+toggleAutoBtn.onclick = ()=>{ 
+  state.autoEnabled = !state.autoEnabled; 
+  if(state.autoEnabled && (state.autoOpenerLevel||0)===0) showToast('Купи Автоповтор в улучшениях'); 
+  ensureAuto(); 
+  saveState(); 
+  renderStats(); 
+};
+petsBtn.onclick = () => { 
+  petModal.style.display = 'flex';
+  renderPetModal();
+};
+closePetModal.onclick = () => {
+  petModal.style.display = 'none';
+};
+savePetsBtn.onclick = savePetSelection;
+window.addEventListener('keydown', e=>{ 
+  if(e.code==='Space') tryLuck(); 
+  if(e.key.toLowerCase()==='s'){ 
+    const f = upgrades.find(x=>x.tier==='small' && !state.upgradesUnlocked[x.id] && !state.upgradesInProgress[x.id]); 
+    if(f) onUpgradeOpen(f.id); 
+  } 
+});
+exportBtn.onclick = ()=>{ 
+  try{ 
+    navigator.clipboard?.writeText(JSON.stringify(state)).then(()=> showToast('Сохранение скопировано')).catch(()=> showToast('Ошибка копирования')); 
+  }catch(e){ 
+    showToast('Ошибка'); 
+  } 
+};
+importBtn.onclick = ()=>{ 
+  const s = prompt('Вставьте JSON сохранения:'); 
+  try{ 
+    const parsed = JSON.parse(s); 
+    state = {...deepClone(defaultState), ...parsed}; 
+    saveState(); 
+    renderAll(); 
+    ensureAuto(); 
+    showFeed('Импорт завершён'); 
+  }catch(e){ 
+    showToast('Некорректный JSON'); 
+  } 
+};
+resetBtn.onclick = ()=>{ 
+  if(confirm('Сбросить прогресс?')){ 
+    localStorage.removeItem(STORAGE_KEY); 
+    state = deepClone(defaultState); 
+    saveState(); 
+    renderAll(); 
+    ensureAuto(); 
+    showFeed('Прогресс сброшен'); 
+  } 
+};
+
+// ---------- ensure quest exists ----------
+if(!state.quest || !state.quest.id){ 
+  state.quest = { id:'q'+Date.now(), type:'clicks', progress:0, goal:10, reward:15 }; 
+  saveState(); 
+}
+
+// ---------- Mobile menu handling ----------
+function handleMobileMenuOnResize(){
+  if(window.innerWidth <= 1000){
+    mobileMenuBtn.style.display = 'block';
+    sidePanel.classList.remove('open'); // скрываем по-умолчанию
+    document.body.classList.remove('mobile-open');
+  } else {
+    mobileMenuBtn.style.display = 'none';
+    sidePanel.classList.add('open'); // показываем на десктопе
+    document.body.classList.remove('mobile-open');
+  }
+}
+mobileMenuBtn.onclick = ()=>{
+  const isOpen = sidePanel.classList.toggle('open');
+  if(isOpen) document.body.classList.add('mobile-open'); else document.body.classList.remove('mobile-open');
+};
+window.addEventListener('resize', handleMobileMenuOnResize);
+handleMobileMenuOnResize(); // initial
+
+// ---------- Boot ----------
+renderAll(); 
+ensureAuto(); 
+showFeed('Игра загружена — готов к эпическим покупкам!');
+</script>
+</body>
+</html>
